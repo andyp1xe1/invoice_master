@@ -2,20 +2,54 @@ package main
 
 import (
 	"fmt"
+	//"github.com/joho/godotenv"
+	"github.com/otiai10/gosseract/v2"
 	"io"
 	"net/http"
 	"os"
 )
 
-func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /upload", uploadHandler)
-	mux.HandleFunc("/file/{id}", serveHandler)
+type Response map[string]interface{}
 
-	http.ListenAndServe("localhost:1337", mux)
+type Server struct {
+	ListenAddr string
+	Tess       gosseract.Client
 }
 
-func serveHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) New() {
+	//err := godotenv.Load()
+	//if err != nil {
+	//	slog.Error(err.Error())
+	//}
+
+	s.ListenAddr = "localhost:1337"
+
+	client := gosseract.NewClient()
+	client.SetLanguage("ron", "rus", "eng")
+}
+
+func (s *Server) Run() {
+	defer s.Tess.Close()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /upload", s.uploadHandler)
+	mux.HandleFunc("/file/{id}", s.serveHandler)
+
+	http.ListenAndServe(s.ListenAddr, mux)
+}
+
+func (s *Server) ImgOcr(path string) (string, error) {
+	s.Tess.SetImage(path)
+	if text, err := s.Tess.Text(); err != nil {
+		return "", err
+	} else {
+
+		return text, nil
+	}
+
+}
+
+func (s *Server) serveHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	path := fmt.Sprintf("%s%s.pdf", "./public/", id)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -25,7 +59,7 @@ func serveHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path)
 }
 
-func uploadHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(32 << 20) // 32 MB is the maximum file size
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -40,8 +74,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	filePath := "./uploads/" + handler.Filename
 	// Create a new file in the uploads directory
-	f, err := os.OpenFile("./uploads/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,5 +90,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("File uploaded successfully"))
+	if text, err := s.ImgOcr(filePath); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+
+		w.Write([]byte(text))
+	}
 }
