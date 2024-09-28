@@ -15,7 +15,7 @@ type Response map[string]interface{}
 
 type Server struct {
 	listenAddr string
-	tess       gosseract.Client
+	tess       *gosseract.Client
 }
 
 func NewServer(addr string) *Server {
@@ -27,8 +27,8 @@ func NewServer(addr string) *Server {
 	s := &Server{}
 	s.listenAddr = addr
 
-	client := gosseract.NewClient()
-	client.SetLanguage("ron", "rus", "eng")
+	s.tess = gosseract.NewClient()
+	s.tess.SetLanguage("ron", "rus", "eng")
 
 	return s
 }
@@ -38,6 +38,7 @@ func (s *Server) Run() error {
 	defer s.tess.Close()
 
 	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.Dir("./views")))
 	mux.HandleFunc("POST /upload", s.uploadHandler)
 	mux.HandleFunc("/file/{id}", s.serveHandler)
 
@@ -95,7 +96,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if text, err := s.imgOcr("./uploads/image.jpg"); err != nil {
+	if text, err := s.imgOcr(filePath); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 
