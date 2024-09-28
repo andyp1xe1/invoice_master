@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -9,6 +10,19 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /upload", uploadHandler)
+	mux.HandleFunc("/file/{id}", serveHandler)
+
+	http.ListenAndServe("localhost:1337", mux)
+}
+
+func serveHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	path := fmt.Sprintf("%s%s.pdf", "./public/", id)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	http.ServeFile(w, r, path)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
