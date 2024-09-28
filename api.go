@@ -7,15 +7,13 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/otiai10/gosseract/v2"
 )
 
 type Response map[string]interface{}
 
 type Server struct {
 	listenAddr string
-	tess       *gosseract.Client
+	scanner    *Scanner
 }
 
 func NewServer(addr string) *Server {
@@ -26,16 +24,14 @@ func NewServer(addr string) *Server {
 
 	s := &Server{}
 	s.listenAddr = addr
-
-	s.tess = gosseract.NewClient()
-	s.tess.SetLanguage("ron", "rus", "eng")
+	s.scanner = NewScanner()
 
 	return s
 }
 
 func (s *Server) Run() error {
 	slog.Info("Warming up...")
-	defer s.tess.Close()
+	defer s.scanner.tess.Close()
 
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir("./views")))
@@ -44,15 +40,6 @@ func (s *Server) Run() error {
 
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)
-}
-
-func (s *Server) imgOcr(path string) (string, error) {
-	s.tess.SetImage(path)
-	if text, err := s.tess.Text(); err != nil {
-		return "", err
-	} else {
-		return text, nil
-	}
 }
 
 func (s *Server) serveHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +83,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if text, err := s.imgOcr(filePath); err != nil {
+	if text, err := s.scanner.imgOcr(filePath); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 
