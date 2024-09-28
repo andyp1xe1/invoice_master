@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	//"github.com/joho/godotenv"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"os"
@@ -14,9 +15,10 @@ type Response map[string]interface{}
 type Server struct {
 	listenAddr string
 	scanner    *Scanner
+	db         *gorm.DB
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string) (*Server, error) {
 	//err := godotenv.Load()
 	//if err != nil {
 	//	slog.Error(err.Error())
@@ -26,7 +28,14 @@ func NewServer(addr string) *Server {
 	s.listenAddr = addr
 	s.scanner = NewScanner()
 
-	return s
+	db, err := initDb()
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+	s.db = db
+
+	return s, nil
 }
 
 func (s *Server) Run() error {
@@ -34,7 +43,12 @@ func (s *Server) Run() error {
 	defer s.scanner.tess.Close()
 
 	mux := http.NewServeMux()
+
+	fileServer := http.FileServer(http.Dir("./static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+
 	mux.Handle("/", http.FileServer(http.Dir("./views")))
+
 	mux.HandleFunc("POST /upload", s.uploadHandler)
 	mux.HandleFunc("/file/{id}", s.serveHandler)
 
