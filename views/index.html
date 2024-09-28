@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.js" integrity="sha384-yZq+5izaUBKcRgFbxgkRYwpHhHHCpp5nseXp0MEQ1A4MTWVMnqkmcuFez8x5qfxr" crossorigin="anonymous"></script>
+    <title>Upload</title>
+</head>
+<body>
+    <form 
+        action="http://localhost:1337/upload" 
+        enctype="multipart/form-data" 
+        method="POST">
+
+        <!-- Hide the file input -->
+        <input type="file" id="fileInput" name="file" style="display:none" required>
+        
+        <!-- Button to trigger file selection -->
+        <button type="button" onclick="document.getElementById('fileInput').click()">
+            Choose File
+        </button>
+        
+        <!-- Submit button -->
+        <button type="submit">Upload File</button>
+    </form>
+</body>
+</html>

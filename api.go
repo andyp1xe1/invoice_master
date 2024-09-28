@@ -50,10 +50,8 @@ func (s *Server) imgOcr(path string) (string, error) {
 	if text, err := s.tess.Text(); err != nil {
 		return "", err
 	} else {
-
 		return text, nil
 	}
-
 }
 
 func (s *Server) serveHandler(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +95,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if text, err := s.imgOcr(filePath); err != nil {
+	if text, err := s.imgOcr("./uploads/image.jpg"); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 
