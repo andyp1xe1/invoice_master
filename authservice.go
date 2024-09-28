@@ -4,6 +4,7 @@ import (
 
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -12,9 +13,13 @@ var (
 )
 
 func init() {
+	err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
     googleOAuthConfig = &oauth2.Config{
-        ClientID:     "1077157352206-a5vgdjg7vdbirtc6j7huup26m9qat1ia.apps.googleusercontent.com",
-        ClientSecret: "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",
+        ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+        ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
         RedirectURL:  googleRedirectURL,
         Scopes: []string{
             "https://www.googleapis.com/auth/calendar",

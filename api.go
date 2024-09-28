@@ -20,7 +20,7 @@ import (
 )
 
 var (
-    store = sessions.NewCookieStore([]byte("your-secret-key")) // Replace with a secure key
+    store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX")) // Replace with a secure key
 )
 
 type Response map[string]interface{}
