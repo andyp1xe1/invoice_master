@@ -16,9 +16,10 @@ type Response map[string]interface{}
 type Server struct {
 	listenAddr string
 	tess       *gosseract.Client
+	db 			*gorm.DB
 }
 
-func NewServer(addr string) *Server {
+func NewServer(addr string) (*Server, error){
 	//err := godotenv.Load()
 	//if err != nil {
 	//	slog.Error(err.Error())
@@ -27,10 +28,18 @@ func NewServer(addr string) *Server {
 	s := &Server{}
 	s.listenAddr = addr
 
+
 	s.tess = gosseract.NewClient()
 	s.tess.SetLanguage("ron", "rus", "eng")
 
-	return s
+
+	err := s.initDb()
+	if err != nil{
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func (s *Server) Run() error {
