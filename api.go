@@ -38,9 +38,16 @@ func (s *Server) Run() error {
 	defer s.tess.Close()
 
 	mux := http.NewServeMux()
+
+	fileServer := http.FileServer(http.Dir("./static"))
+	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+
+	
 	mux.Handle("/", http.FileServer(http.Dir("./views")))
+
 	mux.HandleFunc("POST /upload", s.uploadHandler)
 	mux.HandleFunc("/file/{id}", s.serveHandler)
+	
 
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)

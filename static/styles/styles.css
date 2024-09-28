@@ -1,0 +1,88 @@
+.icon-upload
+{
+    width: 16px;
+    margin-bottom: 20.25px;
+    margin-right: 10px;
+    
+}
+
+.title{
+    font-size: larger;
+}
+
+
+.drop-area {
+    border: 2px dashed #6ca3dd;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 20px;
+    height: 300px;
+width: 400px;
+
+    
+}
+/* Style for the modal content */
+.modal-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.file-count {
+    margin-top: 5px;
+    font-weight: bold;
+    display: none; /* Initially hidden */
+}
+.uploaded-file {
+    position: relative;
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.delete-button {
+    display: none; /* Hidden by default */
+    background-color: #f25252;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.uploaded-file:hover .delete-button {
+    display: inline-block; /* Show delete button on hover */
+}
+
+.wrapper{
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Full viewport height */
+    width: 100vw; /* Full viewport width */
+    position: absolute; /* Allows centering regardless of surrounding elements */
+    top: 0; /* Align to the top */
+    left: 0; /* Align to the left */
+}
+
+.title-upload{
+    display: flex;
+    align-items:normal;
+
+}
+
+.file-counter{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.modal-header{
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row-reverse;
+}
