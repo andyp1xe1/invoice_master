@@ -247,22 +247,24 @@ func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-	// Retrieve user email using the access token
-	email, err := getUserEmail(token.AccessToken)
-	if err != nil {
-		http.Error(w, "Failed to get user email: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // Retrieve user email using the access token
+    email, err := getUserEmail(token.AccessToken)
+    if err != nil {
+        http.Error(w, "Failed to get user email: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
+    // Store the access token and email in the session
+    session, _ := store.Get(r, "session-id")
+    session.Values["accessToken"] = token.AccessToken
+    session.Values["email"] = email // Store the email in the session
+    session.Options.MaxAge = 3600 // Set cookie expiration time
+    err = session.Save(r, w) // Save the session
+    if err != nil {
+        http.Error(w, "Failed to save session: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-    // Store the access token in the session
-    session, _ := store.Get(r, "session-id") 
-    session.Values["accessToken"] = token.AccessToken 
-	session.Values["email"] = email // Store the email in the session
-    session.Options.MaxAge = 3600 
-    session.Save(r, w)
-
-    
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Login successful!")) 
+    // Redirect to the home page after successful login
+    http.Redirect(w, r, "http://localhost:1337", http.StatusSeeOther)
 }
