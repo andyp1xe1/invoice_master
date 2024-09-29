@@ -38,3 +38,32 @@ func mailService(to string) error {
     // Send the email
     return dialer.DialAndSend(msg)
 }
+
+func (s *Server) mailHandler(w http.ResponseWriter, r *http.Request) {
+    // Retrieve the session from the request
+    session, err := store.Get(r, "session-id") 
+    if err != nil {
+        http.Error(w, "Failed to retrieve session: "+err.Error(), http.StatusUnauthorized)
+        return
+    }
+
+    // Extract the email from the session
+    email, ok := session.Values["email"].(string)
+    if !ok || email == "" {
+        http.Error(w, "Email is not found in session", http.StatusUnauthorized)
+        return
+    }
+
+    slog.Info("mail: " + email)
+
+    // mailService function
+    err = mailService(email)
+    if err != nil {
+        log.Printf("Failed to send email: %v", err)
+        http.Error(w, "Failed to send email", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Email sent successfully!"))
+}

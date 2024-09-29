@@ -63,3 +63,69 @@ func addEventToCalendar(token *oauth2.Token, dueDate time.Time) error {
     }
     return nil
 }
+
+
+func getTokenFromSession(r *http.Request) (*oauth2.Token, error) {
+    // Retrieve the session from the request
+    session, err := store.Get(r, "session-id") 
+    if err != nil {
+        return nil, err
+    }
+
+    // Retrieve the access token from the session
+    accessToken, ok := session.Values["accessToken"].(string)
+    if !ok {
+        return nil, fmt.Errorf("access token not found in session")
+    }
+
+    // Create and return an oauth2.Token
+    token := &oauth2.Token{AccessToken: accessToken}
+    return token, nil
+}
+
+
+func handleAddEvent(w http.ResponseWriter, r *http.Request) {
+    // Retrieve the token from session
+    token, err := getTokenFromSession(r)
+    if err != nil {
+        http.Error(w, "Failed to retrieve access token: "+err.Error(), http.StatusUnauthorized)
+        return
+    }
+
+    // Decode the JSON request body to retrieve the due date
+    var requestBody map[string]interface{}
+    err = json.NewDecoder(r.Body).Decode(&requestBody)
+    if err != nil {
+        http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // Get the due date from the request body
+    dueDateStr, ok := requestBody["dueDate"].(string)
+    if !ok || dueDateStr == "" {
+        http.Error(w, "Due date not found or invalid", http.StatusBadRequest)
+        return
+    }
+
+    // Parse the due date
+    dueDate, err := time.Parse("2006-01-02", dueDateStr) // YYYY-MM-DD format
+    if err != nil {
+        http.Error(w, "Invalid date format: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // Try to add the event to the calendar
+    err = addEventToCalendar(token, dueDate)
+    if err != nil {
+        if strings.Contains(err.Error(), "session expired") {
+            http.Error(w, "Session expired. Please log in again.", http.StatusUnauthorized)
+            return
+        }
+        http.Error(w, "Failed to add event: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with success if the event was added successfully
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Event added successfully."))
+}
