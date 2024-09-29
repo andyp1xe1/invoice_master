@@ -20,7 +20,7 @@ func NewInvoiceHandler(db *gorm.DB) *InvoiceHandler {
 
 // GetAllInvoices handles GET requests to retrieve all invoices in JSON
 func (h *InvoiceHandler) GetAllInvoices(w http.ResponseWriter, r *http.Request) {
-	var invoices []Invoice
+	var invoices []Contract
 	// Query the database for all invoices
 	if err := h.db.Preload("Services").Find(&invoices).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -46,7 +46,7 @@ func (h *InvoiceHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Find the invoice by ID in the database
-	var invoice Invoice
+	var invoice Contract
 	if err := h.db.Preload("Services").First(&invoice, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Invoice not found", http.StatusNotFound)

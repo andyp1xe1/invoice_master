@@ -21,46 +21,6 @@ var (
 	store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX"))
 )
 
-func dtoToContract(dto contractDTO) (Contract, error) {
-	contract := Contract{
-		UserID:                  dto.UserID,
-		URLHash:                 dto.URLHash,
-		DocID:                   dto.DocID,
-		CurrencySymbol:          dto.CurrencySymbol,
-		LanguageCode:            dto.LanguageCode,
-		IssueDate:               dto.IssueDate,
-		DueDate:                 dto.DueDate,
-		PONumber:                dto.PONumber,
-		FromName:                dto.FromName,
-		FromEmail:               dto.FromEmail,
-		ToName:                  dto.ToName,
-		ToEmail:                 dto.ToEmail,
-		ToPhone:                 dto.ToPhone,
-		ToAddress:               dto.ToAddress,
-		BankDetails:             dto.BankDetails,
-		AdditionalInfo:          dto.AdditionalInfo,
-		CompanyPromoInfoPhone:   dto.CompanyPromoInfoPhone,
-		CompanyPromoInfoEmail:   dto.CompanyPromoInfoEmail,
-		CompanyPromoInfoWebPage: dto.CompanyPromoInfoWebPage,
-		Subtotal:                dto.Subtotal,
-		Taxes:                   dto.Taxes,
-		Total:                   dto.Total,
-	}
-
-	// Convert each serviceDTO to a Service model
-	for _, serviceDTO := range contract.Services {
-		service := Service{
-			Item:      serviceDTO.Item,
-			Quantity:  serviceDTO.Quantity,
-			PriceUnit: serviceDTO.PriceUnit,
-			Taxes:     serviceDTO.Taxes,
-			Amount:    serviceDTO.Amount,
-		}
-		contract.Services = append(contract.Services, service)
-	}
-
-	return contract, nil
-}
 
 type Response map[string]interface{}
 
@@ -81,12 +41,12 @@ func NewServer(addr string) (*Server, error) {
 	s.listenAddr = addr
 	s.scanner = NewScanner()
 
-	db, err := initDb()
-	if err != nil {
-		slog.Error(err.Error())
-		return nil, err
-	}
-	s.db = db
+	//db, err := initDb()
+	//if err != nil {
+	//	slog.Error(err.Error())
+	//	return nil, err
+	//}
+	//s.db = db
 
 	systemPrompt, err = readSys("sys.md")
 	if err != nil {
@@ -178,26 +138,27 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		content := result.Choices[0].Message.Content
-		var contractDTO contractDTO
-		err = json.Unmarshal([]byte(content), &contractDTO)
-		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
-		}
-		fmt.Println("DTO", contractDTO)
-
-		// Convert contractDTO to Contract model
-		contract, err := dtoToContract(contractDTO)
-		if err != nil {
-			http.Error(w, "Error converting DTO: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+		fmt.Println(content)
+		appendJSONStringToFile("./static/db.json", content)
+		return
 		// Save the contract to the database
-		if err := s.db.Create(&contract).Error; err != nil {
-			http.Error(w, "Failed to save contract: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
 	}
+}
+
+func appendJSONStringToFile(filePath, jsonString string) error {
+	// Open the file in append mode, create it if it doesn't exist
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("could not open file: %v", err)
+	}
+	defer file.Close()
+
+	// Write the JSON string to the file
+	if _, err := file.WriteString(jsonString + ",\n"); err != nil {
+		return fmt.Errorf("could not write to file: %v", err)
+	}
+
+	return nil
 }
 
 func (s *Server) mailHandler(w http.ResponseWriter, r *http.Request) {

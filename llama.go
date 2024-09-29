@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -84,7 +83,6 @@ func llama(docScan string) (*ChatCompletion, error) {
 		log.Fatalf("Error decoding response: %v", err)
 	}
 
-	fmt.Printf("Response: %+v\n", result)
 	return result, nil
 }
 

@@ -1,0 +1,27 @@
+{
+   "services": [
+        {
+            "name": "Monthly Invoicing Software Subscription",
+            "price": 1000.0,
+            "invoiceID": 0
+        },
+        {
+            "name": "Automated Payment Reminders",
+            "price": 200.0,
+            "invoiceID": 0
+        },
+        {
+            "name": "Advanced Analytics",
+            "price": 300.0,
+            "invoiceID": 0
+        }
+   ],
+   "docID": "SERVICE AGREEMENT",
+   "currencySymbol": "$",
+   "languageCode": "en-US",
+   "issueDate": "2025-01-01T00:00:00Z",
+   "subtotal": 1500.0,
+   "discount": 0,
+   "tax": 0,
+   "total": 1500.0
+},
