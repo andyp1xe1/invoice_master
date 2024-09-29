@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
-	"gorm.io/gorm"
 	"github.com/go-chi/chi/v5"
-	 "strconv"
+	"gorm.io/gorm"
+	"net/http"
+	"strconv"
 )
 
 // InvoiceHandler handles the request to fetch all invoices
@@ -20,7 +20,7 @@ func NewInvoiceHandler(db *gorm.DB) *InvoiceHandler {
 
 // GetAllInvoices handles GET requests to retrieve all invoices in JSON
 func (h *InvoiceHandler) GetAllInvoices(w http.ResponseWriter, r *http.Request) {
-	var invoices []Invoice
+	var invoices []Contract
 	// Query the database for all invoices
 	if err := h.db.Preload("Services").Find(&invoices).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -34,7 +34,6 @@ func (h *InvoiceHandler) GetAllInvoices(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-
 // GetInvoiceByID handles GET requests to retrieve a specific invoice by its ID
 func (h *InvoiceHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 	// Extract the ID from the URL parameters
@@ -46,7 +45,7 @@ func (h *InvoiceHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Find the invoice by ID in the database
-	var invoice Invoice
+	var invoice Contract
 	if err := h.db.Preload("Services").First(&invoice, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Invoice not found", http.StatusNotFound)
@@ -63,7 +62,6 @@ func (h *InvoiceHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-
 // GetAllContracts handles GET requests to retrieve all contracts in JSON
 func (h *InvoiceHandler) GetAllContracts(w http.ResponseWriter, r *http.Request) {
 	var contracts []Contract
@@ -79,3 +77,4 @@ func (h *InvoiceHandler) GetAllContracts(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+

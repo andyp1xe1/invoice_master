@@ -15,7 +15,7 @@ func initDb() (*gorm.DB, error) {
 	}
 
 	// Auto migrate the models to create tables
-	err = db.AutoMigrate(&Invoice{}, &Service{}, &Contract{})
+	err = db.AutoMigrate(&Service{}, &Contract{})
 	if err != nil {
 		return nil, err
 	}
@@ -23,4 +23,3 @@ func initDb() (*gorm.DB, error) {
 	log.Println("Database initialized and tables migrated.")
 	return db, nil
 }
-
