@@ -67,6 +67,19 @@ width: 400px;
     left: 0; /* Align to the left */
 }
 
+.wrapper-dash{
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px; /* Full viewport height */
+    width: 60vw; /* Full viewport width */
+    /* Allows centering regardless of surrounding elements */
+    top: 0; /* Align to the top */
+    left: 0; /* Align to the left */
+}
+
 .title-upload{
     display: flex;
     align-items:normal;

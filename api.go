@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	
 )
 
 type Response map[string]interface{}
@@ -51,6 +52,17 @@ func (s *Server) Run() error {
 
 	mux.HandleFunc("POST /upload", s.uploadHandler)
 	mux.HandleFunc("/file/{id}", s.serveHandler)
+
+	// InvoiceHandler route for fetching all invoices
+	invoiceHandler := NewInvoiceHandler(s.db)
+	mux.HandleFunc("/invoices", invoiceHandler.GetAllInvoices)
+
+	// Route for fetching a specific invoice by ID
+	mux.HandleFunc("/invoice/{id}", invoiceHandler.GetInvoiceByID)
+
+	// Route for fetching all contracts
+	mux.HandleFunc("/contracts", invoiceHandler.GetAllContracts)
+
 
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)

@@ -3,6 +3,7 @@ module github.com/andyp1xe1/invoice_master
 go 1.23.1
 
 require (
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/otiai10/gosseract/v2 v2.4.1
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.12

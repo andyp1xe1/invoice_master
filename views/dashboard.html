@@ -1,13 +1,302 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+	<link rel="stylesheet" href="../static/styles/styles.css">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        .download-link {
+            color: #6ca3dd;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        /* Make table scrollable if more than 7 rows */
+        .table-wrapper {
+            max-height: 500px; /* Adjust height as necessary */
+            overflow-y: auto;
+        }
+
+        /* Optional: Style scrollbars for modern look */
+        .table-wrapper::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background-color: #6ca3dd;
+            border-radius: 10px;
+        }
+
+        /* Ensure table header stays aligned with body when scrolling */
+        table {
+            width: 100%;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: #333;
+            color: white;
+        }
+    </style>
 </head>
 <body>
+	<div style="display: flex; justify-content: center;">
+		<div class="wrapper-dash">
+			<h1>Client Contracts Dashboard</h1>
 
-	
-	
+            <!-- Add a wrapper around the table body for scrollability -->
+			<div class="table-wrapper">
+				<table id="contractsTable" data-theme="dark">
+					<thead>
+						<tr>
+							<th>Contract ID</th>
+							<th>Client</th>
+							<th>Invoices</th>
+							<th>Amount</th>
+							<th>Email</th>
+							<th>Issue Date</th>
+							<th>Due Date</th>
+							<th>Total</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- Rows will be dynamically generated here -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+    <script>
+        // Sample JSON data (you can fetch this data from your backend)
+        const data = [
+            {
+                docId: "C-001",
+                toName: "John Doe",
+                numInvoices: 3,
+                invoices: [{ type: 'zip', url: '/invoices/C-001.zip' }],
+                toEmail: "john@example.com",
+                issueDate: "2023-09-01",
+                dueDate: "2023-09-15",
+                total: 1200
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+            {
+                docId: "C-002",
+                toName: "Jane Smith",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-002.pdf' }],
+                toEmail: "jane@example.com",
+                issueDate: "2023-08-20",
+                dueDate: "2023-09-01",
+                total: 500
+            },
+			{
+                docId: "C-003",
+                toName: "Mark Brown",
+                numInvoices: 4,
+                invoices: [{ type: 'zip', url: '/invoices/C-003.zip' }],
+                toEmail: "mark@example.com",
+                issueDate: "2023-07-10",
+                dueDate: "2023-07-25",
+                total: 2000
+            },
+			// Add more dummy data to test scrolling
+			{
+                docId: "C-004",
+                toName: "Emily White",
+                numInvoices: 2,
+                invoices: [{ type: 'zip', url: '/invoices/C-004.zip' }],
+                toEmail: "emily@example.com",
+                issueDate: "2023-06-15",
+                dueDate: "2023-07-01",
+                total: 800
+            },
+            {
+                docId: "C-005",
+                toName: "Paul Black",
+                numInvoices: 1,
+                invoices: [{ type: 'pdf', url: '/invoices/C-005.pdf' }],
+                toEmail: "paul@example.com",
+                issueDate: "2023-05-01",
+                dueDate: "2023-05-10",
+                total: 450
+            }
+        ];
+
+        // Function to generate table rows dynamically
+        function populateTable() {
+            const tableBody = document.querySelector('#contractsTable tbody');
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Contract ID
+                const contractIdCell = document.createElement('td');
+                contractIdCell.textContent = item.docId;
+                row.appendChild(contractIdCell);
+                
+                // Client
+                const clientCell = document.createElement('td');
+                clientCell.textContent = item.toName;
+                row.appendChild(clientCell);
+                
+                // Invoices (link to download)
+                const invoiceCell = document.createElement('td');
+                const invoiceLink = document.createElement('a');
+                invoiceLink.href = item.invoices[0].url;
+                invoiceLink.className = 'download-link';
+                invoiceLink.textContent = item.numInvoices === 1 ? 'Download Invoice' : `Download ${item.numInvoices} Invoices`;
+                invoiceCell.appendChild(invoiceLink);
+                row.appendChild(invoiceCell);
+                
+                // Amount (number of invoices)
+                const amountCell = document.createElement('td');
+                amountCell.textContent = item.numInvoices;
+                row.appendChild(amountCell);
+
+                // Email
+                const emailCell = document.createElement('td');
+                emailCell.textContent = item.toEmail;
+                row.appendChild(emailCell);
+
+                // Issue Date
+                const issueDateCell = document.createElement('td');
+                issueDateCell.textContent = item.issueDate;
+                row.appendChild(issueDateCell);
+
+                // Due Date
+                const dueDateCell = document.createElement('td');
+                dueDateCell.textContent = item.dueDate;
+                row.appendChild(dueDateCell);
+
+                // Total Amount
+                const totalCell = document.createElement('td');
+                totalCell.textContent = `$${item.total}`;
+                row.appendChild(totalCell);
+
+                // Append the row to the table body
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Call the function to populate the table
+        populateTable();
+    </script>
 </body>
 </html>
