@@ -2,24 +2,23 @@ package main
 
 import (
     "fmt"
-    "log"
     "gopkg.in/gomail.v2"
-	"os"
+    "os"
 
-	"github.com/joho/godotenv"
+    "github.com/joho/godotenv"
 )
 
-func mailService(to string) {
+func mailService(to string) error {
     // Load environment variables from .env file
     err := godotenv.Load()
     if err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
+        return fmt.Errorf("error loading .env file: %v", err)
     }
 
     // Retrieve email and password from environment variables
     from := os.Getenv("EMAIL")
     password := os.Getenv("PASSWORD")
-    
+
     // Subject and body of the email
     subject := "Test Email with PDF Attachment"
     body := "Please find the attached PDF file."
@@ -37,10 +36,6 @@ func mailService(to string) {
     dialer := gomail.NewDialer("smtp.gmail.com", 587, from, password)
 
     // Send the email
-    err = dialer.DialAndSend(msg)
-    if err != nil {
-        log.Fatalf("Failed to send the email: %v", err)
-    }
-
-    fmt.Println("Email sent successfully with PDF attachment!")
+    return dialer.DialAndSend(msg)
 }
+
