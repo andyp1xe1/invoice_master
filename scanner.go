@@ -6,6 +6,7 @@ import (
 	"github.com/otiai10/gosseract/v2"
 
 	"fmt"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,31 +37,53 @@ func (s *Scanner) imgOcr(path string) (string, error) {
 }
 
 func (s *Scanner) pdfTxt(path string) (string, error) {
-	// Open the PDF file using MuPDF
 	doc, err := fitz.New(path)
 	if err != nil {
 		return "", fmt.Errorf("failed to open PDF: %w", err)
 	}
 	defer doc.Close()
 
-	// Initialize an empty string to hold the extracted text
 	var content string
 
-	// Iterate over the pages in the PDF
 	for n := 0; n < doc.NumPage(); n++ {
-		// Extract the text from the current page
 		pageText, err := doc.Text(n)
 		if err != nil {
 			return "", fmt.Errorf("failed to extract text from page %d: %w", n, err)
 		}
 
-		// Append the page's text content to the final content
 		content += pageText
 	}
+	if content != "" {
+		return content, nil
+	}
 
-	// Check if any content was extracted
-	if content == "" {
-		return "", fmt.Errorf("no text found in the PDF")
+	for n := 0; n < doc.NumPage(); n++ {
+
+		img, err := doc.Image(n)
+		if err != nil {
+			return "", fmt.Errorf("could not render page %d to image: %v", n, err)
+		}
+
+		imgFileName := fmt.Sprintf("page_%d.png", n+1)
+		imgFile, err := os.Create(imgFileName)
+		if err != nil {
+			return "", fmt.Errorf("could not create image file %s: %v", imgFileName, err)
+		}
+		defer imgFile.Close()
+
+		if err := png.Encode(imgFile, img); err != nil {
+			return "", fmt.Errorf("could not encode image to PNG: %v", err)
+		}
+
+		fmt.Printf("Saved %s\n", imgFileName)
+
+		text, err := s.imgOcr(imgFileName)
+		if err != nil {
+			return "", fmt.Errorf("OCR failed for %s: %v", imgFileName, err)
+		}
+
+		fmt.Printf("Text from page %d:\n%s\n", n+1, text)
+		content += text + "\n"
 	}
 
 	return content, nil

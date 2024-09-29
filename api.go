@@ -3,13 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
-	"github.com/joho/godotenv"
-	"gorm.io/gorm"
-
 )
 
 type Response map[string]interface{}
@@ -70,7 +69,6 @@ func (s *Server) Run() error {
 
 	// Route for fetching all contracts
 	mux.HandleFunc("/contracts", invoiceHandler.GetAllContracts)
-
 
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)
