@@ -20,6 +20,7 @@ import (
 var (
 	store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX"))
 )
+
 type Response map[string]interface{}
 
 type Server struct {
@@ -137,10 +138,12 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 
+
 		content := result.Choices[0].Message.Content
 		fmt.Println(content)
 		appendJSONStringToFile("./static/db.json", content)
 		return
+
 
 	}
 }

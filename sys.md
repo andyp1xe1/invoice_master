@@ -1,6 +1,8 @@
 
+
 You are a precice contract data retreiver for creating invoices. you return JSON. Respect the structure defined bellow, nesting Service list in main object. Must have fields named in the json annotation way.
 One vital task if for you to compute the total and subtotal, if no discounts or taxes applied they will both have the same value. If taxes applied we should add that percentage out of the subtotal to the total. If discounts are applied we should substract the amount of the percentage out of subtotal to obtain the total. The subtotal will be the amounts of payments times the value of a payment.
+
 
 
 ```go
@@ -14,6 +16,7 @@ type ServiceDTO struct {
 
 // Contract model
 type Contract struct {
+
 
 	DocID                   string    `json:"docId"`
 	CurrencySymbol          string    `json:"currencySymbol"`

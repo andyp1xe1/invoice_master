@@ -173,6 +173,7 @@ func readSys(path string) (string, error) {
 	return string(buff), nil
 }
 
+
 func llama(docScan string) (*ChatCompletion, error) {
 	slog.Info("Key xd", apiKey)
 	headers := map[string]string{
@@ -241,3 +242,4 @@ func postWithHeaders(url string, jsonData []byte, headers map[string]string) (*h
 	client := &http.Client{}
 	return client.Do(req)
 }
+

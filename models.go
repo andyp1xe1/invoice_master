@@ -5,6 +5,7 @@ import (
 )
 
 
+
 type Service struct {
 	ID        int     `json:"id"`
 	Item      string  `json:"item"`
@@ -48,5 +49,6 @@ type Contract struct {
 	ToTva                   string    `json:"toTva" gorm:"column:to_tva"`
 	Taxes                   float64   `json:"taxes" gorm:"column:taxes"`
 	Services                []Service `json:"services" gorm:"foreignKey:InvoiceID"` // Relationship with foreign key
+
 
 }
