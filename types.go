@@ -1,5 +1,6 @@
 package main
 
+
 type ChatCompletion struct {
 	ID                string   `json:"id"`
 	Object            string   `json:"object"`
