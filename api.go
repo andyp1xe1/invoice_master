@@ -67,30 +67,72 @@ func (s *Server) Run() error {
 	fileServer := http.FileServer(http.Dir("./static"))
 	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
 
-	mux.Handle("/", http.FileServer(http.Dir("./views")))
 
-	mux.HandleFunc("POST /upload", s.uploadHandler)
-	mux.HandleFunc("/file/{id}", s.serveHandler)
+   // Redirect root URL to /home
+   mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Redirecting from / to /home")
+	http.Redirect(w, r, "http://localhost:1337/home", http.StatusFound)
+})
+
+    // Protect the /home route and serve index.html
+    mux.HandleFunc("/home", s.checkLogin(func(w http.ResponseWriter, r *http.Request) {
+        http.ServeFile(w, r, "./views/index.html")  // Serve index.html for authenticated users
+    }))
+
+	mux.HandleFunc("POST /upload", s.checkLogin(s.uploadHandler))
+	mux.HandleFunc("/file/{id}", s.checkLogin(s.serveHandler))
 
 	// InvoiceHandler route for fetching all invoices
 	invoiceHandler := NewInvoiceHandler(s.db)
-	mux.HandleFunc("/invoices", invoiceHandler.GetAllInvoices)
+	mux.HandleFunc("/invoices", s.checkLogin(invoiceHandler.GetAllInvoices))
 
 	// Route for fetching a specific invoice by ID
-	mux.HandleFunc("/invoice/{id}", invoiceHandler.GetInvoiceByID)
+	mux.HandleFunc("/invoice/{id}", s.checkLogin(invoiceHandler.GetInvoiceByID))
 
 	// Route for fetching all contracts
-	mux.HandleFunc("/contracts", invoiceHandler.GetAllContracts)
+	mux.HandleFunc("/contracts", s.checkLogin(invoiceHandler.GetAllContracts))
 
-	mux.HandleFunc("POST /send-email", s.mailHandler)
+	mux.HandleFunc("POST /send-email", s.checkLogin(s.mailHandler))
 	mux.HandleFunc("/login", handleGoogleLogin)       // Google login route
     mux.HandleFunc("/callback", handleGoogleCallback)  // Google OAuth callback
 	mux.HandleFunc("/add-event", handleAddEvent)
+	// Route to acces the login page
+	mux.HandleFunc("/loginpage", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./views/login.html")  // Serve login.html file
+	})
 
 
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)
 }
+
+func (s *Server) checkLogin(next http.HandlerFunc) http.HandlerFunc {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Skip the login page
+        if r.URL.Path == "/loginpage" {
+            next.ServeHTTP(w, r)
+            return
+        }
+
+        // Retrieve the session from the request
+        session, err := store.Get(r, "session-id") // Replace "session-id" with your actual session name
+        if err != nil {
+            // Session retrieval failed
+            http.Redirect(w, r, "/loginpage", http.StatusFound)
+            return
+        }
+
+        // Check if the session has a valid access token
+        accessToken, ok := session.Values["accessToken"].(string)
+        if !ok || accessToken == "" {
+            // Access token is not valid, redirect to login page
+            http.Redirect(w, r, "/loginpage", http.StatusFound)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
+}
+
 
 func (s *Server) serveHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
@@ -227,7 +269,7 @@ func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
     if err == nil && session.Values["accessToken"] != nil {
         // If a valid session is found, redirect 
         log.Println("User already logged in, redirecting...")
-        http.Redirect(w, r, "http://localhost:1337", http.StatusSeeOther)
+        http.Redirect(w, r, "http://localhost:1337/home", http.StatusSeeOther)
         return
     }
 
@@ -259,6 +301,8 @@ func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
     session.Values["accessToken"] = token.AccessToken
     session.Values["email"] = email // Store the email in the session
     session.Options.MaxAge = 3600 // Set cookie expiration time
+	session.Options.HttpOnly = true // Prevent JavaScript access to cookie
+    session.Options.Secure = true   // Ensure the cookie is sent over HTTPS only
     err = session.Save(r, w) // Save the session
     if err != nil {
         http.Error(w, "Failed to save session: "+err.Error(), http.StatusInternalServerError)
@@ -266,5 +310,5 @@ func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
     }
 
     // Redirect to the home page after successful login
-    http.Redirect(w, r, "http://localhost:1337", http.StatusSeeOther)
+    http.Redirect(w, r, "http://localhost:1337/home", http.StatusSeeOther)
 }
