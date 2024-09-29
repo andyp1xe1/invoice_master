@@ -51,7 +51,7 @@ type ChatCompletion struct {
 }
 
 const (
-	apiEndpoint = "https://api.openai.com/v1/chat/completions"
+	apiEndpoint = "http://localhost:11434/api/generate"
 	modelName   = "llama3.2"
 	modelTemp   = 0.7
 )
