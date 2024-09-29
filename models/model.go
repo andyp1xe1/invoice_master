@@ -1,8 +1,8 @@
 package models
 
 import (
-	"time"
 	"gorm.io/gorm"
+	"time"
 )
 
 // Invoice model
@@ -22,7 +22,7 @@ type Invoice struct {
 	ToEmail                 string    `gorm:"size:100"`
 	ToPhone                 string    `gorm:"size:20"`
 	ToAddress               string    `gorm:"size:255"`
-	Services                []Service `gorm:"foreignKey:InvoiceID"`  // One-to-many relationship
+	Services                []Service `gorm:"foreignKey:InvoiceID"` // One-to-many relationship
 	BankDetails             string    `gorm:"size:255"`
 	AdditionalInfo          string    `gorm:"type:text"`
 	CompanyPromoInfoPhone   string    `gorm:"size:50"`
@@ -30,8 +30,8 @@ type Invoice struct {
 	CompanyPromoInfoWebPage string    `gorm:"size:255"`
 	Tax                     float64
 	Discount                float64
-	Total                   float64   `gorm:"not null"`
-	Subtotal                float64   `gorm:"not null"`
+	Total                   float64 `gorm:"not null"`
+	Subtotal                float64 `gorm:"not null"`
 	BalanceDue              float64
 	PaidDate                time.Time
 	PaidAmount              float64
@@ -41,13 +41,13 @@ type Invoice struct {
 // Service model (used for both Invoice and Contract)
 type Service struct {
 	gorm.Model
-	InvoiceID  *uint     `gorm:"index"`  // Optional reference to Invoice
-	ContractID *uint     `gorm:"index"`  // Optional reference to Contract
-	Item       string    `gorm:"size:255;not null"`
-	Quantity   int       `gorm:"not null"`
-	PriceUnit  float64   `gorm:"not null"`
+	InvoiceID  *uint   `gorm:"index"` // Optional reference to Invoice
+	ContractID *uint   `gorm:"index"` // Optional reference to Contract
+	Item       string  `gorm:"size:255;not null"`
+	Quantity   int     `gorm:"not null"`
+	PriceUnit  float64 `gorm:"not null"`
 	Taxes      float64
-	Amount     float64   `gorm:"not null"`
+	Amount     float64 `gorm:"not null"`
 }
 
 // Contract model
@@ -76,5 +76,5 @@ type Contract struct {
 	Frequency               int       `gorm:"not null"`
 	Subtotal                float64   `gorm:"not null"`
 	Taxes                   float64
-	Total                   float64   `gorm:"not null"`
+	Total                   float64 `gorm:"not null"`
 }

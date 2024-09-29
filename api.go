@@ -1,15 +1,67 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
+
+	"context"
+	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 )
+
+var (
+	store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX"))
+)
+
+func dtoToContract(dto contractDTO) (Contract, error) {
+	contract := Contract{
+		UserID:                  dto.UserID,
+		URLHash:                 dto.URLHash,
+		DocID:                   dto.DocID,
+		CurrencySymbol:          dto.CurrencySymbol,
+		LanguageCode:            dto.LanguageCode,
+		IssueDate:               dto.IssueDate,
+		DueDate:                 dto.DueDate,
+		PONumber:                dto.PONumber,
+		FromName:                dto.FromName,
+		FromEmail:               dto.FromEmail,
+		ToName:                  dto.ToName,
+		ToEmail:                 dto.ToEmail,
+		ToPhone:                 dto.ToPhone,
+		ToAddress:               dto.ToAddress,
+		BankDetails:             dto.BankDetails,
+		AdditionalInfo:          dto.AdditionalInfo,
+		CompanyPromoInfoPhone:   dto.CompanyPromoInfoPhone,
+		CompanyPromoInfoEmail:   dto.CompanyPromoInfoEmail,
+		CompanyPromoInfoWebPage: dto.CompanyPromoInfoWebPage,
+		Frequency:               dto.Frequency,
+		Subtotal:                dto.Subtotal,
+		Taxes:                   dto.Taxes,
+		Total:                   dto.Total,
+	}
+
+	// Convert each serviceDTO to a Service model
+	for _, serviceDTO := range contract.Services {
+		service := Service{
+			Item:      serviceDTO.Item,
+			Quantity:  serviceDTO.Quantity,
+			PriceUnit: serviceDTO.PriceUnit,
+			Taxes:     serviceDTO.Taxes,
+			Amount:    serviceDTO.Amount,
+		}
+		contract.Services = append(contract.Services, service)
+	}
+
+	return contract, nil
+}
 
 type Response map[string]interface{}
 
@@ -69,6 +121,10 @@ func (s *Server) Run() error {
 
 	// Route for fetching all contracts
 	mux.HandleFunc("/contracts", invoiceHandler.GetAllContracts)
+	mux.HandleFunc("POST /send-email", s.mailHandler)
+	mux.HandleFunc("/login", handleGoogleLogin)       // Google login route
+	mux.HandleFunc("/callback", handleGoogleCallback) // Google OAuth callback
+	mux.HandleFunc("/add-event", handleAddEvent)
 
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)
@@ -121,10 +177,149 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	} else if result, err := llama(text); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	} else if json, err := json.Marshal(result); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	} else {
-		w.Write(json)
+		w.Write([]byte("ok"))
+		content := result["content"]
+		var contractDTO contractDTO
+		if text, ok := content.(string); !ok {
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+		} else {
+			json.Unmarshal([]byte(text), &contractDTO)
+		}
+
+		// Convert contractDTO to Contract model
+		contract, err := dtoToContract(contractDTO)
+		if err != nil {
+			http.Error(w, "Error converting DTO: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Save the contract to the database
+		if err := s.db.Create(&contract).Error; err != nil {
+			http.Error(w, "Failed to save contract: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
+}
+
+func (s *Server) mailHandler(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the session from the request
+	session, err := store.Get(r, "session-id")
+	if err != nil {
+		http.Error(w, "Failed to retrieve session: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// Extract the email from the session
+	email, ok := session.Values["email"].(string)
+	if !ok || email == "" {
+		http.Error(w, "Email is not found in session", http.StatusUnauthorized)
+		return
+	}
+
+	slog.Info("mail: " + email)
+
+	// mailService function
+	err = mailService(email)
+	if err != nil {
+		log.Printf("Failed to send email: %v", err)
+		http.Error(w, "Failed to send email", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Email sent successfully!"))
+}
+
+func handleAddEvent(w http.ResponseWriter, r *http.Request) {
+	// Retrieve the token from session
+	token, err := getTokenFromSession(r)
+	if err != nil {
+		http.Error(w, "Failed to retrieve access token: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// Decode the JSON request body to retrieve the due date
+	var requestBody map[string]interface{}
+	err = json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Get the due date from the request body
+	dueDateStr, ok := requestBody["dueDate"].(string)
+	if !ok || dueDateStr == "" {
+		http.Error(w, "Due date not found or invalid", http.StatusBadRequest)
+		return
+	}
+
+	// Parse the due date
+	dueDate, err := time.Parse("2006-01-02", dueDateStr) // YYYY-MM-DD format
+	if err != nil {
+		http.Error(w, "Invalid date format: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Try to add the event to the calendar
+	err = addEventToCalendar(token, dueDate)
+	if err != nil {
+		if strings.Contains(err.Error(), "session expired") {
+			http.Error(w, "Session expired. Please log in again.", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, "Failed to add event: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success if the event was added successfully
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Event added successfully."))
+}
+
+func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, "session-id")
+	if err == nil && session.Values["accessToken"] != nil {
+		// If a valid session is found, redirect
+		log.Println("User already logged in, redirecting...")
+		http.Redirect(w, r, "http://localhost:1337", http.StatusSeeOther)
+		return
+	}
+
+	// If the session is invalid initiate Google login
+	url := googleOAuthConfig.AuthCodeURL("state")
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	code := r.URL.Query().Get("code")
+
+	// Exchange the authorization code for an access token
+	token, err := googleOAuthConfig.Exchange(ctx, code)
+	if err != nil {
+		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Retrieve user email using the access token
+	email, err := getUserEmail(token.AccessToken)
+	if err != nil {
+		http.Error(w, "Failed to get user email: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Store the access token and email in the session
+	session, _ := store.Get(r, "session-id")
+	session.Values["accessToken"] = token.AccessToken
+	session.Values["email"] = email // Store the email in the session
+	session.Options.MaxAge = 3600   // Set cookie expiration time
+	err = session.Save(r, w)        // Save the session
+	if err != nil {
+		http.Error(w, "Failed to save session: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect to the home page after successful login
+	http.Redirect(w, r, "http://localhost:1337", http.StatusSeeOther)
 }
