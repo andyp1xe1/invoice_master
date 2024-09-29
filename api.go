@@ -23,6 +23,48 @@ var (
     store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX")) 
 )
 
+func dtoToContract(dto contractDTO) (Contract, error) {
+    contract := Contract{
+        UserID:                  dto.UserID,
+        URLHash:                 dto.URLHash,
+        DocID:                   dto.DocID,
+        CurrencySymbol:          dto.CurrencySymbol,
+        LanguageCode:            dto.LanguageCode,
+        IssueDate:               dto.IssueDate,
+        DueDate:                 dto.DueDate,
+        PONumber:                dto.PONumber,
+        FromName:                dto.FromName,
+        FromEmail:               dto.FromEmail,
+        ToName:                  dto.ToName,
+        ToEmail:                 dto.ToEmail,
+        ToPhone:                 dto.ToPhone,
+        ToAddress:               dto.ToAddress,
+        BankDetails:             dto.BankDetails,
+        AdditionalInfo:          dto.AdditionalInfo,
+        CompanyPromoInfoPhone:   dto.CompanyPromoInfoPhone,
+        CompanyPromoInfoEmail:   dto.CompanyPromoInfoEmail,
+        CompanyPromoInfoWebPage: dto.CompanyPromoInfoWebPage,
+        Frequency:               dto.Frequency,
+        Subtotal:                dto.Subtotal,
+        Taxes:                   dto.Taxes,
+        Total:                   dto.Total,
+    }
+
+    // Convert each serviceDTO to a Service model
+    for _, serviceDTO := range dto.Services {  // Now we can range over the slice
+        service := Service{
+            Item:      serviceDTO.Item,
+            Quantity:  serviceDTO.Quantity,
+            PriceUnit: serviceDTO.PriceUnit,
+            Taxes:     serviceDTO.Taxes,
+            Amount:    serviceDTO.Amount,
+        }
+        contract.Services = append(contract.Services, service)
+    }
+
+    return contract, nil
+}
+
 type Response map[string]interface{}
 
 type Server struct {
@@ -88,9 +130,43 @@ func (s *Server) Run() error {
 	mux.HandleFunc("/add-event", handleAddEvent)
 
 
+
+    // New route for handling contract data from LLM
+    mux.HandleFunc("POST /llm-contracts", s.handleLLMContracts)
+
+
 	slog.Info("Registered handlers and serving")
 	return http.ListenAndServe(s.listenAddr, mux)
 }
+
+func (s *Server) handleLLMContracts(w http.ResponseWriter, r *http.Request) {
+    var contractDTO contractDTO
+
+    // Decode the JSON request body into the contractDTO
+    err := json.NewDecoder(r.Body).Decode(&contractDTO)
+    if err != nil {
+        http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // Convert contractDTO to Contract model
+    contract, err := dtoToContract(contractDTO)
+    if err != nil {
+        http.Error(w, "Error converting DTO: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // Save the contract to the database
+    if err := s.db.Create(&contract).Error; err != nil {
+        http.Error(w, "Failed to save contract: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with success
+    w.WriteHeader(http.StatusOK)
+    w.Write([]byte("Contract saved successfully."))
+}
+
 
 func (s *Server) serveHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")

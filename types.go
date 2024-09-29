@@ -62,7 +62,7 @@ type contractDTO struct {
 	ToEmail                 string     `json:"toEmail"`
 	ToPhone                 string     `json:"toPhone"`
 	ToAddress               string     `json:"toAddress"`
-	Services                serviceDTO `json:"services"`
+	Services                []serviceDTO `json:"services"`
 	BankDetails             string     `json:"bankDetails"`
 	AdditionalInfo          string     `json:"additionalInfo"`
 	CompanyPromoInfoPhone   string     `json:"companyPromoInfoPhone"`
