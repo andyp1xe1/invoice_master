@@ -1,13 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"log/slog"
-	//"github.com/joho/godotenv"
-	"gorm.io/gorm"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 )
 
 type Response map[string]interface{}
@@ -19,10 +21,11 @@ type Server struct {
 }
 
 func NewServer(addr string) (*Server, error) {
-	//err := godotenv.Load()
-	//if err != nil {
-	//	slog.Error(err.Error())
-	//}
+	err := godotenv.Load()
+	if err != nil {
+		slog.Error("loading env failed:", err)
+	}
+	apiKey = os.Getenv("GROQ_API_KEY")
 
 	s := &Server{}
 	s.listenAddr = addr
@@ -34,6 +37,12 @@ func NewServer(addr string) (*Server, error) {
 		return nil, err
 	}
 	s.db = db
+
+	systemPrompt, err = readSys("sys.md")
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
 
 	return s, nil
 }
@@ -97,10 +106,16 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if text, err := s.scanner.imgOcr(filePath); err != nil {
+	if text, err := s.scanner.extSwitch(filePath); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if result, err := llama(text); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if json, err := json.Marshal(result); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	} else {
-
-		w.Write([]byte(text))
+		w.Write(json)
 	}
 }
