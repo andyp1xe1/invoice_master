@@ -1,21 +1,27 @@
-Return ONE JSON OBJECT, all fields mandatory.
-Use the given legal document as context.
-For the currency symbol use the one at total.
-Frequency will be either "yearly", "monthly", "weekly" and deduced from the terms.
-
+Return ONE JSON OBJECT.
+- All fields must be mandatorily present in the response.
+- The service list will be nested in the contract always.
+- For the currency symbol surrounded by words such as "total" "sub total", etc.
+- The CurrencySymbol Must be a 3 letter code of the likes of "MDL", "USD", "EUR", etc.
+- Frequency MUST be classified as  "monthly" by default, otherwise deduced from sections such as "Term and Termination".
+- Amount is the quantity in termsm of money that describes one service payment.
+- Taxes could be identified by "Fees" or "VTA"
+- Quantity is the amount of units.
+- PriceUnit is the Amount paid per ONE Unit.
+- Item is the title of the Service
+- Time Must be in Golang time.Time compatible format
+- Use the given legal document as context.
 ```go
 type serviceDTO struct {
-	ID 						int 	   `json:"id"`
 	Item                    string     `json:"item"`
 	Quantity                int     `json:"quantity"`
+	Frequency 			string	       `json:"frequency"`
 	PriceUnit				float64 	   `json:"priceUnit"`
 	Taxes					float64	   `json:"taxes"`
 	Amount 					float64	   `json:"amount"`
 }
 
 type contractDTO struct {
-	ID                      int        `json:"id"`
-	UserID                  int        `json:"userId"`
 	URLHash                 string     `json:"urlHash"`
 	DocID                   string     `json:"docId"`
 	CurrencySymbol          string     `json:"currencySymbol"`
@@ -35,9 +41,6 @@ type contractDTO struct {
 	CompanyPromoInfoPhone   string     `json:"companyPromoInfoPhone"`
 	CompanyPromoInfoEmail   string     `json:"companyPromoInfoEmail"`
 	CompanyPromoInfoWebPage string     `json:"companyPromoInfoWebPage"`
-	Frequency 			string	       `json:"frequency"`
-	Subtotal 				float64     `json:"amount"`
 	Taxes					float64     `json:"taxes"`
-	Total  					float64     `json:"total"`
 }
 ```

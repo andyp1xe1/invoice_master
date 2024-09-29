@@ -42,7 +42,6 @@ func dtoToContract(dto contractDTO) (Contract, error) {
 		CompanyPromoInfoPhone:   dto.CompanyPromoInfoPhone,
 		CompanyPromoInfoEmail:   dto.CompanyPromoInfoEmail,
 		CompanyPromoInfoWebPage: dto.CompanyPromoInfoWebPage,
-		Frequency:               dto.Frequency,
 		Subtotal:                dto.Subtotal,
 		Taxes:                   dto.Taxes,
 		Total:                   dto.Total,
@@ -178,14 +177,13 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		w.Write([]byte("ok"))
-		content := result["content"]
+		content := result.Choices[0].Message.Content
 		var contractDTO contractDTO
-		if text, ok := content.(string); !ok {
+		err = json.Unmarshal([]byte(content), &contractDTO)
+		if err != nil {
 			http.Error(w, "Internal error", http.StatusInternalServerError)
-		} else {
-			json.Unmarshal([]byte(text), &contractDTO)
 		}
+		fmt.Println("DTO", contractDTO)
 
 		// Convert contractDTO to Contract model
 		contract, err := dtoToContract(contractDTO)

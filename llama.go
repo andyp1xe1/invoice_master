@@ -32,7 +32,7 @@ func readSys(path string) (string, error) {
 	return string(buff), nil
 }
 
-func llama(docScan string) (Response, error) {
+func llama(docScan string) (*ChatCompletion, error) {
 	slog.Info("Key xd", apiKey)
 	headers := map[string]string{
 		"Content-Type":  "application/json",
@@ -79,7 +79,7 @@ func llama(docScan string) (Response, error) {
 		slog.Error("Error: received status code %d", resp.StatusCode)
 	}
 
-	var result Response
+	var result *ChatCompletion
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		log.Fatalf("Error decoding response: %v", err)
 	}
