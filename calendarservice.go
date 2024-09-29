@@ -4,6 +4,8 @@ import (
     "context"
 	"net/http"
 	"fmt"
+	"time"
+	
 
 	"google.golang.org/api/googleapi"
     "google.golang.org/api/calendar/v3"
@@ -11,7 +13,7 @@ import (
 
 )
 
-func addEventToCalendar(token *oauth2.Token) error {
+func addEventToCalendar(token *oauth2.Token, dueDate time.Time) error {
     ctx := context.Background()
     client := googleOAuthConfig.Client(ctx, token)
 
@@ -20,17 +22,37 @@ func addEventToCalendar(token *oauth2.Token) error {
         return err
     }
 
-    event := &calendar.Event{
-        Summary: "Sample Event",
-        Start: &calendar.EventDateTime{
-            DateTime: "2024-09-30T10:00:00-07:00", // Example start time
-            TimeZone: "America/Los_Angeles",
-        },
-        End: &calendar.EventDateTime{
-            DateTime: "2024-09-30T11:00:00-07:00", // Example end time
-            TimeZone: "America/Los_Angeles",
-        },
-    }
+    // Create a fixed zone for GMT+3
+    gmtPlus3 := time.FixedZone("GMT+3", 3*60*60) // GMT+3 timezone
+
+    // Create start and end times in GMT+3
+    startTime := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 0, 0, 0, 0, gmtPlus3) // Midnight start in GMT+3
+    endTime := time.Date(dueDate.Year(), dueDate.Month(), dueDate.Day(), 23, 59, 0, 0, gmtPlus3) // 23:59 end in GMT+3
+
+
+
+	// Set up reminders
+	reminders:=&calendar.EventReminders{
+    Overrides: []*calendar.EventReminder{
+        {
+			Method: "email",
+			Minutes: 1440, // 1 day before
+		},
+		{
+			Method: "popup",
+			Minutes: 10,   // 10 minutes before
+		},
+    },
+    UseDefault:      false,
+    ForceSendFields: []string{"UseDefault"},
+}
+
+	event := &calendar.Event{
+	Summary:  "Invoice Payment Due",
+	Start:    &calendar.EventDateTime{DateTime: startTime.Format(time.RFC3339)}, // Format for DateTime
+	End:      &calendar.EventDateTime{DateTime: endTime.Format(time.RFC3339)},     // Format for DateTime
+	Reminders: reminders,
+	}
 
     _, err = calendarService.Events.Insert("primary", event).Do()
     if err != nil {

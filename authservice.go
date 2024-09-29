@@ -1,6 +1,10 @@
 package main
 
 import (
+	"log"
+	"os"
+
+
 
     "golang.org/x/oauth2"
     "golang.org/x/oauth2/google"
@@ -23,6 +27,8 @@ func init() {
         RedirectURL:  googleRedirectURL,
         Scopes: []string{
             "https://www.googleapis.com/auth/calendar",
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
             // Add any additional scopes here
         },
         Endpoint: google.Endpoint,

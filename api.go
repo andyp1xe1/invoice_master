@@ -11,7 +11,8 @@ import (
 	"log"
 	"context"
 	"strings"
-
+	"time"
+	"encoding/json"
 
 	"golang.org/x/oauth2"
 	"github.com/otiai10/gosseract/v2"
@@ -20,7 +21,7 @@ import (
 )
 
 var (
-    store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX")) // Replace with a secure key
+    store = sessions.NewCookieStore([]byte("zel!@N7-U$NUjw9BQj+S%8DMS1XA?z%1cgJp-sE0IVY2G6P9Fq?TDImfbqnX")) 
 )
 
 type Response map[string]interface{}
@@ -123,38 +124,45 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func (s *Server) mailHandler(w http.ResponseWriter, r *http.Request) {
-	
-    to := r.FormValue("email")
-	slog.Info("mail: " + to)
-    // Validate the email address
-    if to == "" {
-        http.Error(w, "Email is required", http.StatusBadRequest)
+    // Retrieve the session from the request
+    session, err := store.Get(r, "session-id") 
+    if err != nil {
+        http.Error(w, "Failed to retrieve session: "+err.Error(), http.StatusUnauthorized)
         return
     }
 
-    // Call the mailService function
-    err := mailService(to)
+    // Extract the email from the session
+    email, ok := session.Values["email"].(string)
+    if !ok || email == "" {
+        http.Error(w, "Email is not found in session", http.StatusUnauthorized)
+        return
+    }
+
+    slog.Info("mail: " + email)
+
+    // mailService function
+    err = mailService(email)
     if err != nil {
         log.Printf("Failed to send email: %v", err)
         http.Error(w, "Failed to send email", http.StatusInternalServerError)
         return
     }
 
-    // Respond with a success message
     w.WriteHeader(http.StatusOK)
     w.Write([]byte("Email sent successfully!"))
 }
 
+
 func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
     session, err := store.Get(r, "session-id")
     if err == nil && session.Values["accessToken"] != nil {
-        // If a valid session is found, redirect to your desired page
+        // If a valid session is found, redirect 
         log.Println("User already logged in, redirecting...")
         http.Redirect(w, r, "http://localhost:1337", http.StatusSeeOther)
         return
     }
 
-    // If the session is invalid or doesn't exist, initiate Google login
+    // If the session is invalid initiate Google login
     url := googleOAuthConfig.AuthCodeURL("state")
     http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -170,15 +178,24 @@ func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Store the access token in the session
-    session, _ := store.Get(r, "session-id") // Ignore the error for simplicity
-    session.Values["accessToken"] = token.AccessToken // Store the new access token
-    session.Options.MaxAge = 3600 // Set the session expiration time, e.g., 1 hour
-    session.Save(r, w) // Save the session
+	// Retrieve user email using the access token
+	email, err := getUserEmail(token.AccessToken)
+	if err != nil {
+		http.Error(w, "Failed to get user email: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    // Send a plain text response instead of redirecting
+
+    // Store the access token in the session
+    session, _ := store.Get(r, "session-id") 
+    session.Values["accessToken"] = token.AccessToken 
+	session.Values["email"] = email // Store the email in the session
+    session.Options.MaxAge = 3600 
+    session.Save(r, w)
+
+    
     w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Login successful!")) // Send a success message
+    w.Write([]byte("Login successful!")) 
 }
 
 
@@ -186,7 +203,7 @@ func handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 func getTokenFromSession(r *http.Request) (*oauth2.Token, error) {
     // Retrieve the session from the request
-    session, err := store.Get(r, "session-id") // Replace "session-name" with your actual session name
+    session, err := store.Get(r, "session-id") 
     if err != nil {
         return nil, err
     }
@@ -211,8 +228,30 @@ func handleAddEvent(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Decode the JSON request body to retrieve the due date
+    var requestBody map[string]interface{}
+    err = json.NewDecoder(r.Body).Decode(&requestBody)
+    if err != nil {
+        http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // Get the due date from the request body
+    dueDateStr, ok := requestBody["dueDate"].(string)
+    if !ok || dueDateStr == "" {
+        http.Error(w, "Due date not found or invalid", http.StatusBadRequest)
+        return
+    }
+
+    // Parse the due date
+    dueDate, err := time.Parse("2006-01-02", dueDateStr) // YYYY-MM-DD format
+    if err != nil {
+        http.Error(w, "Invalid date format: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+
     // Try to add the event to the calendar
-    err = addEventToCalendar(token)
+    err = addEventToCalendar(token, dueDate)
     if err != nil {
         if strings.Contains(err.Error(), "session expired") {
             http.Error(w, "Session expired. Please log in again.", http.StatusUnauthorized)
